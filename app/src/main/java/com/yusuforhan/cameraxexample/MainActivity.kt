@@ -96,8 +96,10 @@ class MainActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
+            // Kamera yaşam döngüsünü yaşam sahibine bağlamak için kullanılır
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
+            // Önizleme
             val preview = Preview.Builder()
                 .build()
                 .also {
@@ -115,14 +117,16 @@ class MainActivity : AppCompatActivity() {
                     })
                 }
 
+            // Varsayılan olarak arka kamerayı seç
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-
             try {
+                // Yeniden bağlamadan önce tüm kullanım durumlarını bağlantısız yap
                 cameraProvider.unbindAll()
 
+                // Kullanım durumlarını kameraya bağla
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture,imageAnalyzer)
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -130,6 +134,7 @@ class MainActivity : AppCompatActivity() {
 
         }, ContextCompat.getMainExecutor(this))
     }
+
 
 
     private fun requestPermissions() {
