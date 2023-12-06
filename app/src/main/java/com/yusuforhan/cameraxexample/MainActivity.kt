@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
     private lateinit var cameraExecutor: ExecutorService
+    private var isFrontCameraSelected : Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.imageCaptureButton.setOnClickListener { takePhoto(it) }
         binding.videoCaptureButton.setOnClickListener { captureVideo() }
-
+        binding.switchCameraButton.setOnClickListener { switchCamera() }
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
@@ -167,6 +168,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
+    private fun switchCamera() { isFrontCameraSelected = !isFrontCameraSelected }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -175,6 +177,11 @@ class MainActivity : AppCompatActivity() {
 
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
+            val cameraSelector = if (isFrontCameraSelected) {
+                CameraSelector.DEFAULT_FRONT_CAMERA
+            }else{
+                CameraSelector.DEFAULT_BACK_CAMERA
+            }
 
             val preview = Preview.Builder()
                 .build()
@@ -196,7 +203,6 @@ class MainActivity : AppCompatActivity() {
                     })
                 }
 
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
                 cameraProvider.unbindAll()
@@ -236,6 +242,7 @@ class MainActivity : AppCompatActivity() {
             }
         activityResultLauncher.launch(REQUIRED_PERMISSIONS)
     }
+
 
 
     private fun allPermissionGranted() = REQUIRED_PERMISSIONS.all {
