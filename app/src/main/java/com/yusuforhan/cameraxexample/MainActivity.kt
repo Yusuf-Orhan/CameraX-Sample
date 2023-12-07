@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.text.Html.TagHandler
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -42,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     private var videoCapture: VideoCapture<Recorder>? = null
     private var recording: Recording? = null
     private lateinit var cameraExecutor: ExecutorService
-    private var isFrontCameraSelected : Boolean = false
+    private var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,14 +53,12 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
 
-
         binding.imageCaptureButton.setOnClickListener { takePhoto(it) }
         binding.videoCaptureButton.setOnClickListener { captureVideo() }
-        binding.switchCameraButton.setOnClickListener { switchCamera() }
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
-    private fun takePhoto(view : View) {
+    private fun takePhoto(view: View) {
 
         val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
             .format(System.currentTimeMillis())
@@ -84,12 +81,12 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    Snackbar.make(view,"Photo capture success!",Snackbar.LENGTH_LONG).show()
+                    Snackbar.make(view, "Photo capture success!", Snackbar.LENGTH_LONG).show()
                 }
 
                 override fun onError(exception: ImageCaptureException) {
-                    Snackbar.make(view,"Photo capture error!",Snackbar.LENGTH_LONG).show()
-                    Log.e(TAG2,exception.message.orEmpty())
+                    Snackbar.make(view, "Photo capture error!", Snackbar.LENGTH_LONG).show()
+                    Log.e(TAG2, exception.message.orEmpty())
                 }
 
             }
@@ -127,15 +124,17 @@ class MainActivity : AppCompatActivity() {
         recording = videoCapture.output
             .prepareRecording(this, mediaStoreOutputOptions)
             .apply {
-                if (PermissionChecker.checkSelfPermission(this@MainActivity,
-                        android.Manifest.permission.RECORD_AUDIO) ==
-                    PermissionChecker.PERMISSION_GRANTED)
-                {
+                if (PermissionChecker.checkSelfPermission(
+                        this@MainActivity,
+                        android.Manifest.permission.RECORD_AUDIO
+                    ) ==
+                    PermissionChecker.PERMISSION_GRANTED
+                ) {
                     withAudioEnabled()
                 }
             }
             .start(ContextCompat.getMainExecutor(this)) { recordEvent ->
-                when(recordEvent) {
+                when (recordEvent) {
                     is VideoRecordEvent.Start -> {
                         binding.videoCaptureButton.apply {
                             val text = getString(R.string.stop_capture)
@@ -145,6 +144,7 @@ class MainActivity : AppCompatActivity() {
                             isEnabled = true
                         }
                     }
+
                     is VideoRecordEvent.Finalize -> {
                         if (!recordEvent.hasError()) {
                             val msg = "Video capture succeeded: " +
@@ -155,8 +155,10 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             recording?.close()
                             recording = null
-                            Log.e(TAG, "Video capture ends with error: " +
-                                    "${recordEvent.error}")
+                            Log.e(
+                                TAG, "Video capture ends with error: " +
+                                        "${recordEvent.error}"
+                            )
                         }
                         binding.videoCaptureButton.apply {
                             val text = getString(R.string.start_capture)
@@ -168,7 +170,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
-    private fun switchCamera() { isFrontCameraSelected = !isFrontCameraSelected }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -177,11 +178,7 @@ class MainActivity : AppCompatActivity() {
 
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            val cameraSelector = if (isFrontCameraSelected) {
-                CameraSelector.DEFAULT_FRONT_CAMERA
-            }else{
-                CameraSelector.DEFAULT_BACK_CAMERA
-            }
+            cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             val preview = Preview.Builder()
                 .build()
@@ -208,15 +205,14 @@ class MainActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
 
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer, videoCapture)
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer, videoCapture
+                )
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(this))
     }
-
-
 
 
     private fun requestPermissions() {
@@ -244,10 +240,10 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     private fun allPermissionGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
